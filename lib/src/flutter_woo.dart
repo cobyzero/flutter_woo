@@ -1,13 +1,14 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_woo/src/genered_auth.dart';
 import 'package:flutter_woo/src/models/product_woo.dart';
+import 'package:flutter_woo/src/oauth1.dart';
 
 class FlutterWoo {
   FlutterWoo._privateConstructor();
   static final FlutterWoo instance = FlutterWoo._privateConstructor();
   late String consumerKey;
   late String consumerSecret;
-  late Dio dio;
+  late OAuth1 auth;
+
   Future<void> init({
     required String domain,
     required String consumerKey,
@@ -17,32 +18,24 @@ class FlutterWoo {
     this.consumerKey = consumerKey;
     this.consumerSecret = consumerSecret;
 
-    dio = Dio(
-      BaseOptions(
-        baseUrl: "${isHttps ? "https" : "http"}://$domain/wp-json/wc/v3/",
-        queryParameters: {
-          "Authorization": GeneredAuth.generateOAuthHeader(
-            httpMethod: isHttps ? "https" : "http",
-            url: domain,
-            consumerKey: consumerKey,
-            consumerSecret: consumerSecret,
-          ),
-        },
+    auth = OAuth1(
+      consumerKey: consumerKey,
+      consumerSecret: consumerSecret,
+      options: BaseOptions(
+        baseUrl: "http://localhost/wp-json/wc/v3/",
       ),
     );
   }
 
   Future<List<ProductWoo>> getProducts() async {
-    try {
-      final response = await dio.get("products");
+    final response = await auth.get(
+      "products",
+    );
 
-      return (response.data as List)
-          .map(
-            (e) => ProductWoo.fromJson(e),
-          )
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    return (response.data as List)
+        .map(
+          (e) => ProductWoo.fromJson(e),
+        )
+        .toList();
   }
 }
